@@ -18,7 +18,7 @@
         label { font-weight: bold; margin-right: 10px; }
         .checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-top: 8px; }
         
-        button { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+        button { background-color: #28a745; color: white; border: none; padding: 12px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
         button:hover { background-color: #218838; }
         button:disabled { background-color: #6c757d; cursor: not-allowed; }
         
@@ -30,7 +30,7 @@
         .log-table th, .log-table td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         .log-table th { background-color: #343a40; color: white; }
         
-        .loading { text-align: center; color: #666; font-weight: bold; margin: 10px 0; }
+        .loading { text-align: center; color: #007bff; font-weight: bold; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -107,7 +107,7 @@
 
     <!-- 雲端紀錄列表 -->
     <h3>📜 全家雲端歷史紀錄</h3>
-    <div id="loadingStatus" class="loading">雲端資料同步中...</div>
+    <div id="loadingStatus" class="loading">雲端資料載入中...</div>
     <table class="log-table" id="logTable">
         <thead>
             <tr>
@@ -123,12 +123,12 @@
 </div>
 
 <script>
-    // ⚠️ 請將下方網址替換為您部署後獲得的 Apps Script 網址
+    // ⚠️ 請填入您最新的 Google Apps Script Web App 網址
     const API_URL = "https://script.google.com/u/0/home/projects/1zVc5UYEiSe8NiL5IoLE4EX95sYUm13f90Q6G0uKkn9rnej0LYucK23QH/edit";
 
     document.getElementById('dateSelect').valueAsDate = new Date();
 
-    // 頁面載入時自動從雲端抓取最新資料
+    // 頁面載入時讀取雲端資料
     fetchCloudData();
 
     function fetchCloudData() {
@@ -141,7 +141,7 @@
             })
             .catch(err => {
                 console.error(err);
-                document.getElementById('loadingStatus').innerText = "❌ 雲端連線失敗，請檢查 API 網址。";
+                document.getElementById('loadingStatus').innerText = "⚠️ 資料讀取失敗，請確認 API 網址是否正確。";
             });
     }
 
@@ -163,31 +163,33 @@
 
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
-        btn.innerText = "資料上傳中...";
+        btn.innerText = "資料同步中，請稍候...";
 
         const payload = {
-            action: 'add',
             date: date,
             child: child,
             items: items.join(', '),
             points: totalPoints
         };
 
+        // 使用 text/plain 避免跨網域預檢請求 (Preflight CORS Error)
         fetch(API_URL, {
             method: 'POST',
+            contentType: 'application/json',
             body: JSON.stringify(payload)
         })
-        .then(res => res.json())
-        .then(res => {
+        .then(() => {
+            alert('登錄成功！資料已同步至雲端。');
             btn.disabled = false;
             btn.innerText = "提交家事紀錄 (雲端同步)";
             // 清空勾選
             checkboxes.forEach(cb => cb.checked = false);
-            // 重新整理雲端資料
-            fetchCloudData();
+            // 延遲1秒再抓取，確保 Google Sheet 已寫入完畢
+            setTimeout(fetchCloudData, 1000);
         })
         .catch(err => {
-            alert('上傳失敗，請再試一次');
+            console.error(err);
+            alert('上傳發生錯誤，請檢查網路後重試。');
             btn.disabled = false;
             btn.innerText = "提交家事紀錄 (雲端同步)";
         });
@@ -200,11 +202,10 @@
         let wesleyTotal = 0;
         let sisyTotal = 0;
 
-        // 依日期排序（最新在最前面）
+        // 依日期降冪排序
         records.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         records.forEach(r => {
-            // 格式化日期格式 (去掉 ISO 時間標籤)
             let formattedDate = typeof r.date === 'string' ? r.date.split('T')[0] : r.date;
             
             if (r.child === 'Wesley') wesleyTotal += Number(r.points);
