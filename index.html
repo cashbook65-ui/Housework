@@ -36,7 +36,7 @@
 <body>
 
 <div class="container">
-    <h1>月份家事工作記錄表</h1>
+    <h1>七月份家事工作記錄表</h1>
 
     <!-- 家事對照表 -->
     <h3>📋 家事點數規則表</h3>
@@ -123,16 +123,16 @@
 </div>
 
 <script>
-    // ⚠️ 請填入您最新的 Google Apps Script Web App 網址
-    const API_URL = "https://script.google.com/macros/s/AKfycbyyKtJ5v7mGPj_9n5jqn-OlsD-PGIToNQLXsUHvt24/dev";
+    // ⚠️ 請填入您在步驟 3 獲得的 API 網址
+    const API_URL = "https://script.google.com/macros/s/AKfycbylnLXD_sNhd0a97NlF6k65Nhg6XKlEfeEiycwMNHBFKm8TVWCXhCkaAJ2HOCLdFYn0/exec";
 
     document.getElementById('dateSelect').valueAsDate = new Date();
 
-    // 頁面載入時讀取雲端資料
+    // 載入雲端資料
     fetchCloudData();
 
     function fetchCloudData() {
-        document.getElementById('loadingStatus').innerText = "雲端資料同步中...";
+        document.getElementById('loadingStatus').innerText = "連線雲端中...";
         fetch(API_URL)
             .then(res => res.json())
             .then(data => {
@@ -141,7 +141,7 @@
             })
             .catch(err => {
                 console.error(err);
-                document.getElementById('loadingStatus').innerText = "⚠️ 資料讀取失敗，請確認 API 網址是否正確。";
+                document.getElementById('loadingStatus').innerText = "❌ 雲端連線失敗，請檢查 API 網址是否正確與公開。";
             });
     }
 
@@ -163,33 +163,32 @@
 
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
-        btn.innerText = "資料同步中，請稍候...";
+        btn.innerText = "資料上傳中...";
 
-        const payload = {
-            date: date,
-            child: child,
-            items: items.join(', '),
-            points: totalPoints
-        };
+        // 使用 URLSearchParams 組合 Form 格式數據（徹底避開 CORS 問題）
+        const formData = new URLSearchParams();
+        formData.append('date', date);
+        formData.append('child', child);
+        formData.append('items', items.join(', '));
+        formData.append('points', totalPoints);
 
-        // 使用 text/plain 避免跨網域預檢請求 (Preflight CORS Error)
         fetch(API_URL, {
             method: 'POST',
-            contentType: 'application/json',
-            body: JSON.stringify(payload)
+            body: formData
         })
-        .then(() => {
-            alert('登錄成功！資料已同步至雲端。');
+        .then(res => res.text())
+        .then(res => {
+            alert('登錄成功！已同步至雲端。');
             btn.disabled = false;
             btn.innerText = "提交家事紀錄 (雲端同步)";
             // 清空勾選
             checkboxes.forEach(cb => cb.checked = false);
-            // 延遲1秒再抓取，確保 Google Sheet 已寫入完畢
-            setTimeout(fetchCloudData, 1000);
+            // 延遲 1.5 秒更新資料
+            setTimeout(fetchCloudData, 1500);
         })
         .catch(err => {
             console.error(err);
-            alert('上傳發生錯誤，請檢查網路後重試。');
+            alert('上傳失敗，請再試一次');
             btn.disabled = false;
             btn.innerText = "提交家事紀錄 (雲端同步)";
         });
@@ -202,7 +201,6 @@
         let wesleyTotal = 0;
         let sisyTotal = 0;
 
-        // 依日期降冪排序
         records.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         records.forEach(r => {
