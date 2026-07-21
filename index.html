@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>七月份家事工作記錄表</title>
+    <title>家事工作記錄表</title>
     <style>
         body { font-family: Arial, "Microsoft JhengHei", sans-serif; margin: 15px; background-color: #f4f6f9; }
         h1, h3 { text-align: center; color: #333; }
@@ -30,13 +30,13 @@
         .log-table th, .log-table td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         .log-table th { background-color: #343a40; color: white; }
         
-        .loading { text-align: center; color: #007bff; font-weight: bold; margin: 10px 0; }
+        .loading { text-align: center; color: #007bff; font-weight: bold; margin: 10px 0; min-height: 24px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>七月份家事工作記錄表</h1>
+    <h1>月份家事工作記錄表</h1>
 
     <!-- 家事對照表 -->
     <h3>📋 家事點數規則表</h3>
@@ -123,25 +123,31 @@
 </div>
 
 <script>
-    // ⚠️ 請填入您在步驟 3 獲得的 API 網址
-    const API_URL = "https://script.google.com/macros/s/AKfycbyyKtJ5v7mGPj_9n5jqn-OlsD-PGIToNQLXsUHvt24/dev";
+    // ⚠️ 請填入您最新的 Google Apps Script 部署 URL
+    const API_URL = "https://script.google.com/macros/s/AKfycbxfFjcJNjLKlyrBAlRuuZMiQxkw-4aVdERl3WQ-ypt1Ws2n-YATbwcaKTO_lvVgCavV/exec";
 
+    // 預設日期為今天
     document.getElementById('dateSelect').valueAsDate = new Date();
 
-    // 載入雲端資料
+    // 頁面載入時讀取雲端資料
     fetchCloudData();
 
     function fetchCloudData() {
-        document.getElementById('loadingStatus').innerText = "連線雲端中...";
+        const loadingEl = document.getElementById('loadingStatus');
+        loadingEl.innerText = "連線雲端同步中...";
+        
         fetch(API_URL)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error("網路連線回應異常");
+                return res.json();
+            })
             .then(data => {
-                document.getElementById('loadingStatus').innerText = "";
+                loadingEl.innerText = "";
                 renderData(data);
             })
             .catch(err => {
                 console.error(err);
-                document.getElementById('loadingStatus').innerText = "❌ 雲端連線失敗，請檢查 API 網址是否正確與公開。";
+                loadingEl.innerText = "⚠️ 雲端資料載入失敗，請確認 API 網址是否正確。";
             });
     }
 
@@ -163,45 +169,47 @@
 
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
-        btn.innerText = "資料上傳中...";
+        btn.innerText = "資料同步中，請稍候...";
 
-        // 使用 URLSearchParams 組合 Form 格式數據（徹底避開 CORS 問題）
         const formData = new URLSearchParams();
         formData.append('date', date);
         formData.append('child', child);
         formData.append('items', items.join(', '));
         formData.append('points', totalPoints);
 
+        // 發送 POST 請求
         fetch(API_URL, {
             method: 'POST',
             body: formData
         })
         .then(res => res.text())
-        .then(res => {
-            alert('登錄成功！已同步至雲端。');
-            btn.disabled = false;
-            btn.innerText = "提交家事紀錄 (雲端同步)";
+        .then(text => {
+            alert('登錄成功！資料已同步至雲端。');
             // 清空勾選
             checkboxes.forEach(cb => cb.checked = false);
-            // 延遲 1.5 秒更新資料
-            setTimeout(fetchCloudData, 1500);
+            // 延遲 1 秒更新歷史紀錄
+            setTimeout(() => {
+                fetchCloudData();
+                btn.disabled = false;
+                btn.innerText = "提交家事紀錄 (雲端同步)";
+            }, 1000);
         })
         .catch(err => {
             console.error(err);
-            alert('上傳失敗，請再試一次');
+            alert('上傳發生錯誤，請檢查網路後重試。');
             btn.disabled = false;
             btn.innerText = "提交家事紀錄 (雲端同步)";
         });
     }
 
-  function renderData(records) {
+    function renderData(records) {
         const tbody = document.getElementById('logBody');
         tbody.innerHTML = '';
 
         let wesleyTotal = 0;
         let sisyTotal = 0;
 
-        // 使用字串直接比對排序（YYYY-MM-DD 格式直接比對即可，不透過 Date 物件轉換）
+        // 純文字日期降冪排序 (YYYY-MM-DD 直接比對不經 Date 物件轉換，絕不跑位)
         records.sort((a, b) => {
             const dateA = String(a.date).split('T')[0];
             const dateB = String(b.date).split('T')[0];
@@ -209,7 +217,6 @@
         });
 
         records.forEach(r => {
-            // 取出 YYYY-MM-DD 部分，不進行時區轉換
             let formattedDate = String(r.date).split('T')[0];
             
             if (r.child === 'Wesley') wesleyTotal += Number(r.points);
@@ -230,7 +237,6 @@
 
         document.getElementById('wesleyStatus').innerHTML = calculateReward(wesleyTotal, 15);
         document.getElementById('sisyStatus').innerHTML = calculateReward(sisyTotal, 10);
-    }
     }
 
     function calculateReward(points, base) {
