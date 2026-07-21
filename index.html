@@ -23,6 +23,7 @@
         .checkbox-item { background: white; border: 1px solid #dee2e6; padding: 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; transition: all 0.2s; }
         .checkbox-item:hover { border-color: #1a73e8; background-color: #e8f0fe; }
         .checkbox-item input { margin-right: 8px; transform: scale(1.2); }
+        .badge-2p { color: #d93025; font-weight: bold; }
         
         .point-preview { width: 100%; text-align: right; font-weight: bold; color: #d93025; font-size: 16px; margin-top: 10px; }
 
@@ -65,12 +66,12 @@
             • 滿 10點：<b>$1,500</b> 基本獎金 ＋ 超出點數 × $100
         </td></tr>
         <tr><td>B 收倒垃圾 / 資源回收</td><td>1 點</td></tr>
-        <tr><td>C 打掃樓梯與走道</td><td>1 點</td></tr>
+        <tr><td>C 打掃樓梯與走道</td><td><b class="badge-2p">2 點</b></td></tr>
         <tr><td>D 洗衣服 / 曬衣服</td><td>1 點</td></tr>
         <tr><td>E 整理自己房間</td><td>1 點</td></tr>
         <tr><td>F 媽爸交代工作</td><td>1 點</td></tr>
         <tr><td>G 整理一樓與掃地機器人工作</td><td>1 點</td></tr>
-        <tr><td>H 每月記帳</td><td>1 點</td></tr>
+        <tr><td>H 每月記帳</td><td><b class="badge-2p">2 點</b></td></tr>
         <tr><td>I 其他家事</td><td>1 點</td></tr>
     </table>
 
@@ -96,12 +97,12 @@
             <div class="checkbox-group" id="choresList">
                 <label class="checkbox-item"><input type="checkbox" value="A" data-points="1" onchange="updatePreviewPoints()"> A 收拾餐桌/洗碗 (1點)</label>
                 <label class="checkbox-item"><input type="checkbox" value="B" data-points="1" onchange="updatePreviewPoints()"> B 收倒垃圾/資源回收 (1點)</label>
-                <label class="checkbox-item"><input type="checkbox" value="C" data-points="1" onchange="updatePreviewPoints()"> C 打掃樓梯與走道 (1點)</label>
+                <label class="checkbox-item"><input type="checkbox" value="C" data-points="2" onchange="updatePreviewPoints()"> C 打掃樓梯與走道 <span class="badge-2p">(2點)</span></label>
                 <label class="checkbox-item"><input type="checkbox" value="D" data-points="1" onchange="updatePreviewPoints()"> D 洗衣服/曬衣服 (1點)</label>
                 <label class="checkbox-item"><input type="checkbox" value="E" data-points="1" onchange="updatePreviewPoints()"> E 整理自己房間 (1點)</label>
                 <label class="checkbox-item"><input type="checkbox" value="F" data-points="1" onchange="updatePreviewPoints()"> F 媽爸交代工作 (1點)</label>
                 <label class="checkbox-item"><input type="checkbox" value="G" data-points="1" onchange="updatePreviewPoints()"> G 整理一樓與掃地機器人 (1點)</label>
-                <label class="checkbox-item"><input type="checkbox" value="H" data-points="1" onchange="updatePreviewPoints()"> H 每月記帳 (1點)</label>
+                <label class="checkbox-item"><input type="checkbox" value="H" data-points="2" onchange="updatePreviewPoints()"> H 每月記帳 <span class="badge-2p">(2點)</span></label>
                 <label class="checkbox-item"><input type="checkbox" value="I" data-points="1" onchange="updatePreviewPoints()"> I 其他家事 (1點)</label>
             </div>
             <div class="point-preview" id="pointPreview">本次勾選：0 項，小計 0 點</div>
