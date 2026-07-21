@@ -123,13 +123,12 @@
 </div>
 
 <script>
-    // ⚠️ 請填入您最新的 Google Apps Script 部署 URL
-    const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL";
+    // ⚠️ 請替換為您部署後獲得的 API 網址 (開頭為 https://script.google.com/macros/s/...)
+    const API_URL = "https://script.google.com/macros/s/AKfycbx8Kow3ZYcCqOvv2XnzuPnvduDxaDAaZZF1-bfeZZn7QQZqfGQ16wAPQdKh1QljfsDb/exec";
 
-    // 預設日期為今天
     document.getElementById('dateSelect').valueAsDate = new Date();
 
-    // 頁面載入時讀取雲端資料
+    // 載入資料
     fetchCloudData();
 
     function fetchCloudData() {
@@ -138,7 +137,7 @@
         
         fetch(API_URL)
             .then(res => {
-                if (!res.ok) throw new Error("網路連線回應異常");
+                if (!res.ok) throw new Error("回應異常");
                 return res.json();
             })
             .then(data => {
@@ -147,7 +146,7 @@
             })
             .catch(err => {
                 console.error(err);
-                loadingEl.innerText = "⚠️ 雲端資料載入失敗，請確認 API 網址是否正確。";
+                loadingEl.innerText = "⚠️ 雲端資料載入失敗，請確認 API 網址。";
             });
     }
 
@@ -177,7 +176,6 @@
         formData.append('items', items.join(', '));
         formData.append('points', totalPoints);
 
-        // 發送 POST 請求
         fetch(API_URL, {
             method: 'POST',
             body: formData
@@ -185,9 +183,7 @@
         .then(res => res.text())
         .then(text => {
             alert('登錄成功！資料已同步至雲端。');
-            // 清空勾選
             checkboxes.forEach(cb => cb.checked = false);
-            // 延遲 1 秒更新歷史紀錄
             setTimeout(() => {
                 fetchCloudData();
                 btn.disabled = false;
@@ -196,28 +192,39 @@
         })
         .catch(err => {
             console.error(err);
-            alert('上傳發生錯誤，請檢查網路後重試。');
+            alert('上傳發生錯誤，請檢查網路。');
             btn.disabled = false;
             btn.innerText = "提交家事紀錄 (雲端同步)";
         });
     }
 
-   function renderData(records) {
+    function renderData(records) {
         const tbody = document.getElementById('logBody');
         tbody.innerHTML = '';
 
         let wesleyTotal = 0;
         let sisyTotal = 0;
 
-        // 純文字日期降冪排序
+        // 排序
         records.sort((a, b) => {
-            const dateA = String(a.date).split('T')[0];
-            const dateB = String(b.date).split('T')[0];
-            return dateB.localeCompare(dateA);
+            return String(b.date).localeCompare(String(a.date));
         });
 
         records.forEach(r => {
-            let formattedDate = String(r.date).split('T')[0];
+            let rawDate = r.date;
+            let formattedDate = "";
+
+            // 確保輸出格式為 2026/07/01 (西元/月/日)
+            let d = new Date(rawDate);
+            if (!isNaN(d.getTime())) {
+                let year = d.getFullYear();
+                let month = String(d.getMonth() + 1).padStart(2, '0');
+                let day = String(d.getDate()).padStart(2, '0');
+                formattedDate = `${year}/${month}/${day}`;
+            } else {
+                formattedDate = String(rawDate).split('T')[0].replace(/-/g, '/');
+            }
+
             let childName = r.child || '-';
             let itemDetails = r.items && r.items.trim() !== '' ? r.items : '（無記錄項目）';
             let pointVal = Number(r.points) || 0;
