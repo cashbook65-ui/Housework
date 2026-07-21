@@ -123,8 +123,9 @@
 </div>
 
 <script>
-    // ⚠️ 請填入您部署後獲得的網址 (開頭為 https://script.google.com/macros/s/...)
+    // ⚠️ 請填入第二步測試成功的 URL 網址！
     const API_URL = "https://script.google.com/macros/s/AKfycbyyKtJ5v7mGPj_9n5jqn-OlsD-PGIToNQLXsUHvt24/dev";
+
     document.getElementById('dateSelect').valueAsDate = new Date();
 
     // 載入資料
@@ -135,21 +136,18 @@
         loadingEl.innerText = "連線雲端同步中...";
         
         fetch(API_URL)
-            .then(res => {
-                if (!res.ok) throw new Error("回應異常");
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
                 loadingEl.innerText = "";
                 renderData(data);
             })
             .catch(err => {
                 console.error(err);
-                loadingEl.innerText = "⚠️ 雲端資料載入失敗，請確認 API 網址是否正確。";
+                loadingEl.innerText = "⚠️ 雲端連線失敗，請檢查 API 網址。";
             });
     }
 
-   function addRecord() {
+    function addRecord() {
         const date = document.getElementById('dateSelect').value;
         const child = document.getElementById('childSelect').value;
         const checkboxes = document.querySelectorAll('#choresList input[type="checkbox"]:checked');
@@ -169,7 +167,6 @@
         btn.disabled = true;
         btn.innerText = "資料同步中，請稍候...";
 
-        // 將新增資料打包進 URL 參數
         const params = new URLSearchParams({
             action: 'add',
             date: date,
@@ -178,9 +175,7 @@
             points: totalPoints
         });
 
-        const targetUrl = `${API_URL}?${params.toString()}`;
-
-        fetch(targetUrl)
+        fetch(`${API_URL}?${params.toString()}`)
             .then(res => res.json())
             .then(data => {
                 alert('登錄成功！資料已同步至雲端。');
@@ -214,11 +209,6 @@
             document.getElementById('sisyStatus').innerHTML = calculateReward(0, 10);
             return;
         }
-
-        // 依日期排序（最新在上面）
-        records.sort((a, b) => {
-            return String(b.date).localeCompare(String(a.date));
-        });
 
         records.forEach(r => {
             let dateStr = String(r.date || '').split('T')[0].replace(/-/g, '/');
