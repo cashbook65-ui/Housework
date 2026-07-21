@@ -123,8 +123,8 @@
 </div>
 
 <script>
-    // ⚠️ 請替換為您部署後獲得的 API 網址 (開頭為 https://script.google.com/macros/s/...)
-    const API_URL = "https://script.google.com/macros/s/AKfycbyyKtJ5v7mGPj_9n5jqn-OlsD-PGIToNQLXsUHvt24/dev";
+    // ⚠️ 請填入您部署後獲得的網址 (開頭為 https://script.google.com/macros/s/...)
+    const API_URL = "https://script.google.com/macros/s/AKfycbzsCX8id-c2D3ATAdu2Oncj7klnP8S8qlaJJy9mzawmGyFKADHqyvAHAs88RBEo3xgA/exec";
 
     document.getElementById('dateSelect').valueAsDate = new Date();
 
@@ -146,7 +146,7 @@
             })
             .catch(err => {
                 console.error(err);
-                loadingEl.innerText = "⚠️ 雲端資料載入失敗，請確認 API 網址。";
+                loadingEl.innerText = "⚠️ 雲端資料載入失敗，請確認 API 網址是否正確。";
             });
     }
 
@@ -214,7 +214,7 @@
             return;
         }
 
-        // 依日期降冪排序
+        // 依日期排序（最新在上面）
         records.sort((a, b) => {
             return String(b.date).localeCompare(String(a.date));
         });
@@ -243,7 +243,6 @@
 
         document.getElementById('wesleyStatus').innerHTML = calculateReward(wesleyTotal, 15);
         document.getElementById('sisyStatus').innerHTML = calculateReward(sisyTotal, 10);
-    }
     }
 
     function calculateReward(points, base) {
