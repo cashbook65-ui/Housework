@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>家事工作記錄表</title>
+    <title>七月份家事工作記錄表</title>
     <style>
         body { font-family: Arial, "Microsoft JhengHei", sans-serif; margin: 15px; background-color: #f4f6f9; }
         h1, h3 { text-align: center; color: #333; }
@@ -30,13 +30,13 @@
         .log-table th, .log-table td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         .log-table th { background-color: #343a40; color: white; }
         
-        .loading { text-align: center; color: #007bff; font-weight: bold; margin: 10px 0; min-height: 24px; }
+        .loading { text-align: center; color: #007bff; font-weight: bold; margin: 10px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>月份家事工作記錄表</h1>
+    <h1>七月份家事工作記錄表</h1>
 
     <!-- 家事對照表 -->
     <h3>📋 家事點數規則表</h3>
@@ -123,27 +123,25 @@
 </div>
 
 <script>
-    // ⚠️ 請填入第二步測試成功的 URL 網址！
-    const API_URL = "https://script.google.com/macros/s/AKfycbyyKtJ5v7mGPj_9n5jqn-OlsD-PGIToNQLXsUHvt24/dev";
+    // ⚠️ 請填入您在步驟 3 獲得的 API 網址
+    const API_URL = "https://script.google.com/macros/s/AKfycbyt1i93-eP1KOqSP9S5ID96FE6NrXh45PLMQjmf3NiXhUb0AOdUgXpvWt_PevnzPfRv/exec";
 
     document.getElementById('dateSelect').valueAsDate = new Date();
 
-    // 載入資料
+    // 載入雲端資料
     fetchCloudData();
 
     function fetchCloudData() {
-        const loadingEl = document.getElementById('loadingStatus');
-        loadingEl.innerText = "連線雲端同步中...";
-        
+        document.getElementById('loadingStatus').innerText = "連線雲端中...";
         fetch(API_URL)
             .then(res => res.json())
             .then(data => {
-                loadingEl.innerText = "";
+                document.getElementById('loadingStatus').innerText = "";
                 renderData(data);
             })
             .catch(err => {
                 console.error(err);
-                loadingEl.innerText = "⚠️ 雲端連線失敗，請檢查 API 網址。";
+                document.getElementById('loadingStatus').innerText = "❌ 雲端連線失敗，請檢查 API 網址是否正確與公開。";
             });
     }
 
@@ -165,33 +163,35 @@
 
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
-        btn.innerText = "資料同步中，請稍候...";
+        btn.innerText = "資料上傳中...";
 
-        const params = new URLSearchParams({
-            action: 'add',
-            date: date,
-            child: child,
-            items: items.join(', '),
-            points: totalPoints
+        // 使用 URLSearchParams 組合 Form 格式數據（徹底避開 CORS 問題）
+        const formData = new URLSearchParams();
+        formData.append('date', date);
+        formData.append('child', child);
+        formData.append('items', items.join(', '));
+        formData.append('points', totalPoints);
+
+        fetch(API_URL, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.text())
+        .then(res => {
+            alert('登錄成功！已同步至雲端。');
+            btn.disabled = false;
+            btn.innerText = "提交家事紀錄 (雲端同步)";
+            // 清空勾選
+            checkboxes.forEach(cb => cb.checked = false);
+            // 延遲 1.5 秒更新資料
+            setTimeout(fetchCloudData, 1500);
+        })
+        .catch(err => {
+            console.error(err);
+            alert('上傳失敗，請再試一次');
+            btn.disabled = false;
+            btn.innerText = "提交家事紀錄 (雲端同步)";
         });
-
-        fetch(`${API_URL}?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                alert('登錄成功！資料已同步至雲端。');
-                checkboxes.forEach(cb => cb.checked = false);
-                setTimeout(() => {
-                    fetchCloudData();
-                    btn.disabled = false;
-                    btn.innerText = "提交家事紀錄 (雲端同步)";
-                }, 1000);
-            })
-            .catch(err => {
-                console.error(err);
-                alert('上傳發生錯誤，請檢查網路。');
-                btn.disabled = false;
-                btn.innerText = "提交家事紀錄 (雲端同步)";
-            });
     }
 
     function renderData(records) {
@@ -201,30 +201,20 @@
         let wesleyTotal = 0;
         let sisyTotal = 0;
 
-        if (!Array.isArray(records) || records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="color:#777;">目前雲端尚無家事紀錄</td></tr>';
-            document.getElementById('wesleyPoints').innerText = `0 點`;
-            document.getElementById('sisyPoints').innerText = `0 點`;
-            document.getElementById('wesleyStatus').innerHTML = calculateReward(0, 15);
-            document.getElementById('sisyStatus').innerHTML = calculateReward(0, 10);
-            return;
-        }
+        records.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         records.forEach(r => {
-            let dateStr = String(r.date || '').split('T')[0].replace(/-/g, '/');
-            let childName = String(r.child || '-').trim();
-            let itemDetails = r.items && String(r.items).trim() !== '' ? r.items : '（無記錄項目）';
-            let pointVal = Number(r.points) || 0;
+            let formattedDate = typeof r.date === 'string' ? r.date.split('T')[0] : r.date;
             
-            if (childName === 'Wesley') wesleyTotal += pointVal;
-            if (childName === 'Sisy') sisyTotal += pointVal;
+            if (r.child === 'Wesley') wesleyTotal += Number(r.points);
+            if (r.child === 'Sisy') sisyTotal += Number(r.points);
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${dateStr}</td>
-                <td>${childName}</td>
-                <td>${itemDetails}</td>
-                <td>+${pointVal} 點</td>
+                <td>${formattedDate}</td>
+                <td>${r.child}</td>
+                <td>${r.items}</td>
+                <td>+${r.points} 點</td>
             `;
             tbody.appendChild(tr);
         });
