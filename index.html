@@ -205,28 +205,24 @@
         let wesleyTotal = 0;
         let sisyTotal = 0;
 
-        // 排序
+        if (!Array.isArray(records) || records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="color:#777;">目前雲端尚無家事紀錄</td></tr>';
+            document.getElementById('wesleyPoints').innerText = `0 點`;
+            document.getElementById('sisyPoints').innerText = `0 點`;
+            document.getElementById('wesleyStatus').innerHTML = calculateReward(0, 15);
+            document.getElementById('sisyStatus').innerHTML = calculateReward(0, 10);
+            return;
+        }
+
+        // 依日期降冪排序
         records.sort((a, b) => {
             return String(b.date).localeCompare(String(a.date));
         });
 
         records.forEach(r => {
-            let rawDate = r.date;
-            let formattedDate = "";
-
-            // 確保輸出格式為 2026/07/01 (西元/月/日)
-            let d = new Date(rawDate);
-            if (!isNaN(d.getTime())) {
-                let year = d.getFullYear();
-                let month = String(d.getMonth() + 1).padStart(2, '0');
-                let day = String(d.getDate()).padStart(2, '0');
-                formattedDate = `${year}/${month}/${day}`;
-            } else {
-                formattedDate = String(rawDate).split('T')[0].replace(/-/g, '/');
-            }
-
-            let childName = r.child || '-';
-            let itemDetails = r.items && r.items.trim() !== '' ? r.items : '（無記錄項目）';
+            let dateStr = String(r.date || '').split('T')[0].replace(/-/g, '/');
+            let childName = String(r.child || '-').trim();
+            let itemDetails = r.items && String(r.items).trim() !== '' ? r.items : '（無記錄項目）';
             let pointVal = Number(r.points) || 0;
             
             if (childName === 'Wesley') wesleyTotal += pointVal;
@@ -234,7 +230,7 @@
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${formattedDate}</td>
+                <td>${dateStr}</td>
                 <td>${childName}</td>
                 <td>${itemDetails}</td>
                 <td>+${pointVal} 點</td>
@@ -247,6 +243,7 @@
 
         document.getElementById('wesleyStatus').innerHTML = calculateReward(wesleyTotal, 15);
         document.getElementById('sisyStatus').innerHTML = calculateReward(sisyTotal, 10);
+    }
     }
 
     function calculateReward(points, base) {
