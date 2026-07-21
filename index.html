@@ -209,7 +209,7 @@
         let wesleyTotal = 0;
         let sisyTotal = 0;
 
-        // 純文字日期降冪排序 (YYYY-MM-DD 直接比對不經 Date 物件轉換，絕不跑位)
+        // 純文字日期降冪排序
         records.sort((a, b) => {
             const dateA = String(a.date).split('T')[0];
             const dateB = String(b.date).split('T')[0];
@@ -218,16 +218,19 @@
 
         records.forEach(r => {
             let formattedDate = String(r.date).split('T')[0];
+            let childName = r.child || '-';
+            let itemDetails = r.items && r.items.trim() !== '' ? r.items : '（無記錄項目）';
+            let pointVal = Number(r.points) || 0;
             
-            if (r.child === 'Wesley') wesleyTotal += Number(r.points);
-            if (r.child === 'Sisy') sisyTotal += Number(r.points);
+            if (childName === 'Wesley') wesleyTotal += pointVal;
+            if (childName === 'Sisy') sisyTotal += pointVal;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${formattedDate}</td>
-                <td>${r.child}</td>
-                <td>${r.items}</td>
-                <td>+${r.points} 點</td>
+                <td>${childName}</td>
+                <td>${itemDetails}</td>
+                <td>+${pointVal} 點</td>
             `;
             tbody.appendChild(tr);
         });
@@ -237,6 +240,7 @@
 
         document.getElementById('wesleyStatus').innerHTML = calculateReward(wesleyTotal, 15);
         document.getElementById('sisyStatus').innerHTML = calculateReward(sisyTotal, 10);
+    }
     }
 
     function calculateReward(points, base) {
