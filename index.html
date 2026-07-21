@@ -143,8 +143,8 @@
 </div>
 
 <script>
-    // ⚠️ 請填入您最新的 Web App API 網址
-    const API_URL = "https://script.google.com/macros/s/AKfycbyyKtJ5v7mGPj_9n5jqn-OlsD-PGIToNQLXsUHvt24/dev";
+    // ⚠️ 請填入您部署獲得的 API 網址
+    const API_URL = "https://script.google.com/macros/s/AKfycbxztQB5BYxLIUhbKrSr0rMME6hg7TLL_YWPxQrXc6Y/dev";
 
     document.getElementById('dateSelect').valueAsDate = new Date();
 
@@ -154,7 +154,7 @@
         const checkboxes = document.querySelectorAll('#choresList input[type="checkbox"]:checked');
         let total = 0;
         checkboxes.forEach(cb => {
-            total += parseInt(cb.getAttribute('data-points')) || 0;
+            total += parseInt(cb.getAttribute('data-points'), 10) || 0;
         });
         document.getElementById('pointPreview').innerText = `本次勾選：${checkboxes.length} 項，小計 ${total} 點`;
     }
@@ -188,7 +188,7 @@
 
         checkboxes.forEach(cb => {
             items.push(cb.value);
-            totalPoints += parseInt(cb.getAttribute('data-points')) || 0;
+            totalPoints += parseInt(cb.getAttribute('data-points'), 10) || 0;
         });
 
         const btn = document.getElementById('submitBtn');
@@ -239,14 +239,13 @@
             return;
         }
 
-        // 依日期排序（最新在最上面）
         records.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
         records.forEach(r => {
             let dateStr = String(r.date || '').split('T')[0].replace(/-/g, '/');
             let childName = String(r.child || '-').trim();
             let itemDetails = r.items && String(r.items).trim() !== '' ? r.items : '（無記錄項目）';
-            let pointVal = Number(r.points) || 0;
+            let pointVal = parseInt(r.points, 10) || 0;
             
             if (childName === 'Wesley') wesleyTotal += pointVal;
             if (childName === 'Sisy') sisyTotal += pointVal;
@@ -268,7 +267,6 @@
         document.getElementById('sisyStatus').innerHTML = calculateReward('Sisy', sisyTotal);
     }
 
-    // 精確金額計算與試算邏輯
     function calculateReward(child, points) {
         let basePoints = child === 'Wesley' ? 15 : 10;
         let baseReward = child === 'Wesley' ? 2000 : 1500;
