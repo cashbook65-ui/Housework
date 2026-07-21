@@ -124,7 +124,8 @@
 
 <script>
     // ⚠️ 請填入您最新的 Google Apps Script 部署 URL
-    const API_URL = "https://script.google.com/macros/s/AKfycbx8sKuJiwvTO-iC2DTc5ruipwlBgioCmyePObldIAV0q-0DG6wPiYlzvf0VqeaufrkU/exec"
+    const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL";
+
     // 預設日期為今天
     document.getElementById('dateSelect').valueAsDate = new Date();
 
@@ -208,28 +209,15 @@
         let wesleyTotal = 0;
         let sisyTotal = 0;
 
-        // 日期排序
+        // 純文字日期降冪排序
         records.sort((a, b) => {
-            const dateA = String(a.date);
-            const dateB = String(b.date);
+            const dateA = String(a.date).split('T')[0];
+            const dateB = String(b.date).split('T')[0];
             return dateB.localeCompare(dateA);
         });
 
         records.forEach(r => {
-            let rawDate = r.date;
-            let formattedDate = "";
-
-            // 強制格式化為 2026/07/01 格式
-            let d = new Date(rawDate);
-            if (!isNaN(d.getTime())) {
-                let year = d.getFullYear();
-                let month = String(d.getMonth() + 1).padStart(2, '0');
-                let day = String(d.getDate()).padStart(2, '0');
-                formattedDate = `${year}/${month}/${day}`;
-            } else {
-                formattedDate = String(rawDate).split('T')[0].replace(/-/g, '/');
-            }
-
+            let formattedDate = String(r.date).split('T')[0];
             let childName = r.child || '-';
             let itemDetails = r.items && r.items.trim() !== '' ? r.items : '（無記錄項目）';
             let pointVal = Number(r.points) || 0;
@@ -252,8 +240,6 @@
 
         document.getElementById('wesleyStatus').innerHTML = calculateReward(wesleyTotal, 15);
         document.getElementById('sisyStatus').innerHTML = calculateReward(sisyTotal, 10);
-    }
-    }
     }
 
     function calculateReward(points, base) {
