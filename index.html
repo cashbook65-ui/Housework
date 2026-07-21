@@ -144,12 +144,18 @@
 </div>
 
 <script>
-    // ⚠️ 請填入您部署獲得的 API 網址
-    const API_URL = "https://script.google.com/macros/s/AKfycbxztQB5BYxLIUhbKrSr0rMME6hg7TLL_YWPxQrXc6Y/dev";
+    // ⚠️ 請填入您最新的 Web App API 網址
+    const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL";
 
     document.getElementById('dateSelect').valueAsDate = new Date();
 
-    fetchCloudData();
+    // 先優先讀取本機快取資料（防瞬間斷線）
+    const localCache = localStorage.getItem('choreCache');
+    if (localCache) {
+        try { renderData(JSON.parse(localCache)); } catch(e){}
+    }
+
+    fetchCloudDataWithRetry(3);
 
     function updatePreviewPoints() {
         const checkboxes = document.querySelectorAll('#choresList input[type="checkbox"]:checked');
@@ -160,20 +166,62 @@
         document.getElementById('pointPreview').innerText = `本次勾選：${checkboxes.length} 項，小計 ${total} 點`;
     }
 
-    function fetchCloudData() {
+    // 帶自動重試機制的連線函式
+    function fetchCloudDataWithRetry(retryCount) {
         const loadingEl = document.getElementById('loadingStatus');
         loadingEl.innerText = "連線雲端同步中...";
-        
-        fetch(API_URL)
-            .then(res => res.json())
-            .then(data => {
+
+        const callbackName = 'jsonp_cb_' + Math.round(100000 * Math.random());
+        let isHandled = false;
+
+        const timer = setTimeout(() => {
+            if (!isHandled) {
+                isHandled = true;
+                cleanUp();
+                if (retryCount > 1) {
+                    fetchCloudDataWithRetry(retryCount - 1);
+                } else {
+                    loadingEl.innerText = "⚠️ 雲端回應較慢，已顯示最新離線資料。";
+                }
+            }
+        }, 3500); // 3.5秒超時自動重試
+
+        window[callbackName] = function(data) {
+            if (!isHandled) {
+                isHandled = true;
+                clearTimeout(timer);
+                cleanUp();
                 loadingEl.innerText = "";
+                // 儲存至本機快取
+                localStorage.setItem('choreCache', JSON.stringify(data));
                 renderData(data);
-            })
-            .catch(err => {
-                console.error(err);
-                loadingEl.innerText = "⚠️ 雲端連線失敗，請檢查 API 網址。";
-            });
+            }
+        };
+
+        const script = document.createElement('script');
+        script.id = callbackName;
+        script.src = `${API_URL}?callback=${callbackName}&t=${new Date().getTime()}`;
+        
+        function cleanUp() {
+            delete window[callbackName];
+            const s = document.getElementById(callbackName);
+            if (s) document.body.removeChild(s);
+        }
+
+        script.onerror = function() {
+            if (!isHandled) {
+                isHandled = true;
+                clearTimeout(timer);
+                cleanUp();
+                if (retryCount > 1) {
+                    setTimeout(() => fetchCloudDataWithRetry(retryCount - 1), 1000);
+                } else {
+                    loadingEl.innerText = "⚠️ 雲端連線失敗，請檢查網路或 API 權限。";
+                }
+            }
+        };
+
+        document.body.appendChild(script);
     }
 
     function addRecord() {
@@ -196,32 +244,44 @@
         btn.disabled = true;
         btn.innerText = "資料同步中，請稍候...";
 
+        const callbackName = 'jsonp_add_' + Math.round(100000 * Math.random());
+        
+        window[callbackName] = function(data) {
+            delete window[callbackName];
+            const s = document.getElementById(callbackName);
+            if (s) document.body.removeChild(s);
+
+            alert(`登錄成功！${child} 獲得了 ${totalPoints} 點。`);
+            checkboxes.forEach(cb => cb.checked = false);
+            updatePreviewPoints();
+            
+            setTimeout(() => {
+                fetchCloudDataWithRetry(2);
+                btn.disabled = false;
+                btn.innerText = "提交家事紀錄 (雲端同步)";
+            }, 800);
+        };
+
         const params = new URLSearchParams({
             action: 'add',
             date: date,
             child: child,
             items: items.join(', '),
-            points: totalPoints
+            points: totalPoints,
+            callback: callbackName,
+            t: new Date().getTime()
         });
 
-        fetch(`${API_URL}?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                alert(`登錄成功！${child} 獲得了 ${totalPoints} 點。`);
-                checkboxes.forEach(cb => cb.checked = false);
-                updatePreviewPoints();
-                setTimeout(() => {
-                    fetchCloudData();
-                    btn.disabled = false;
-                    btn.innerText = "提交家事紀錄 (雲端同步)";
-                }, 1000);
-            })
-            .catch(err => {
-                console.error(err);
-                alert('上傳發生錯誤，請檢查網路。');
-                btn.disabled = false;
-                btn.innerText = "提交家事紀錄 (雲端同步)";
-            });
+        const script = document.createElement('script');
+        script.id = callbackName;
+        script.src = `${API_URL}?${params.toString()}`;
+        script.onerror = function() {
+            alert('上傳請求已送出，系統將重新更新歷史紀錄。');
+            btn.disabled = false;
+            btn.innerText = "提交家事紀錄 (雲端同步)";
+            fetchCloudDataWithRetry(2);
+        };
+        document.body.appendChild(script);
     }
 
     function renderData(records) {
