@@ -194,17 +194,23 @@
         });
     }
 
-    function renderData(records) {
+  function renderData(records) {
         const tbody = document.getElementById('logBody');
         tbody.innerHTML = '';
 
         let wesleyTotal = 0;
         let sisyTotal = 0;
 
-        records.sort((a, b) => new Date(b.date) - new Date(a.date));
+        // 使用字串直接比對排序（YYYY-MM-DD 格式直接比對即可，不透過 Date 物件轉換）
+        records.sort((a, b) => {
+            const dateA = String(a.date).split('T')[0];
+            const dateB = String(b.date).split('T')[0];
+            return dateB.localeCompare(dateA);
+        });
 
         records.forEach(r => {
-            let formattedDate = typeof r.date === 'string' ? r.date.split('T')[0] : r.date;
+            // 取出 YYYY-MM-DD 部分，不進行時區轉換
+            let formattedDate = String(r.date).split('T')[0];
             
             if (r.child === 'Wesley') wesleyTotal += Number(r.points);
             if (r.child === 'Sisy') sisyTotal += Number(r.points);
@@ -224,6 +230,7 @@
 
         document.getElementById('wesleyStatus').innerHTML = calculateReward(wesleyTotal, 15);
         document.getElementById('sisyStatus').innerHTML = calculateReward(sisyTotal, 10);
+    }
     }
 
     function calculateReward(points, base) {
